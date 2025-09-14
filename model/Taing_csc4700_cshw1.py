@@ -11,12 +11,13 @@ from typing import List, Tuple, Dict, Iterable, Optional, Set
 
 TOKEN_PATTERN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 
+## Tokenize text, treating punctuation as separate tokens.
 def tokenize(text: str) -> List[str]:
-    ## Tokenize text, treating punctuation as separate tokens.
     return TOKEN_PATTERN.findall(text)
 
+ ## A n-gram model (bigram or trigram)
 class NGramModel:
-    ## A n-gram model (bigram or trigram)
+   
     def __init__(self, n: int):
         if n not in (2, 3):
             raise ValueError("n must be 2 (bigram) or 3 (trigram)")
@@ -28,16 +29,18 @@ class NGramModel:
         self._backCounts: Dict[Tuple[str, ...], Counter] = defaultdict(Counter)
         self._backProbs: Dict[Tuple[str, ...], Tuple[List[str], List[float]]] = {}
 
+     ## Generate (context, next_token) pairs from token list.
     def contexts(self, tokens: List[str]) -> Iterable[Tuple[Tuple[str, ...], str]]:
-        ## Generate (context, next_token) pairs from token list.
+       
         k = self.n - 1
         for i in range(len(tokens) - k):
             ctx = tuple(tokens[i:i + k])
             next_token = tokens[i + k]
             yield ctx, next_token
 
+    ## Train the model on the given text data.
     def train(self, data: str) -> None:
-        ## Train the n-gram model on the provided text data.
+        
         tokens = tokenize(data)
         self.vocab = set(tokens)
         if len(tokens) < self.n:
@@ -71,10 +74,11 @@ class NGramModel:
         self._trained = True
 
 
-    def predict(self, context: Tuple[str, ...], deterministic: bool = False) -> str:
+
+    ## Predict the next word given a context. If deterministic is True, return the most probable word.
+    def predict_next_word(self, context: Tuple[str, ...], deterministic: bool = False) -> str:
         
-       ## Predict the next word given a context.
-        ## If deterministic=True, use greedy argmax. Otherwise sample by probability.
+       
         if not self._trained:
             raise ValueError("Model not trained/loaded.")
 
@@ -116,25 +120,22 @@ class NGramModel:
         ctx_list = list(start)
 
         for _ in range(n_words):
-            # If trigram and we only have one prior word, use bigram backoff for this step
+            ## Special case: trigram model with single-word start context
             if self.n == 3 and len(ctx_list) == 1:
-                next_token = self.predict(tuple(ctx_list), deterministic=deterministic)
+                next_token = self.predict_next_word(tuple(ctx_list), deterministic=deterministic)
                 generated.append(next_token)
-                # Now we have 2 words of history to proceed with trigram
                 ctx_list = (ctx_list + [next_token])[-2:]
                 continue
 
-            # Normal path
-            next_token = self.predict(tuple(ctx_list), deterministic=deterministic)
+            next_token = self.predict_next_word(tuple(ctx_list), deterministic=deterministic)
             generated.append(next_token)
             if k > 0:
                 ctx_list = (ctx_list + [next_token])[1:]
 
         return generated
 
-
-def read_text_file(path: str) -> str:
     ## Read entire text file content.
+def read_text_file(path: str) -> str:
     try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
@@ -142,9 +143,8 @@ def read_text_file(path: str) -> str:
         print(f"Error: could not find training data file '{path}'.")
         sys.exit(1)
        
-
+## Save the model to a file using pickle.
 def save_model(model: NGramModel, path: str) -> None:
-    ## Save the model to a file using pickle.
     try:
         with open(path, "wb") as f:
             pickle.dump(model, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -152,8 +152,8 @@ def save_model(model: NGramModel, path: str) -> None:
         print(f"Error saving model to '{path}': {e}")
         
 
+## Load the model from a file using pickle.
 def load_model(path: str) -> NGramModel:
-    ## Load the model from a file using pickle.
     try:
         with open(path, "rb") as f:
             obj = pickle.load(f)
@@ -169,8 +169,8 @@ def load_model(path: str) -> NGramModel:
         sys.exit(1)
 
 
-def do_train(args: argparse.Namespace) -> None:
-    ## Handle training activity.
+## Handle training activity.
+def do_train(args: argparse.Namespace) -> None:  
     if args.n not in (2, 3):
         print("Error: --n must be 2 (bigram) or 3 (trigram).")
         sys.exit(1)
@@ -192,14 +192,16 @@ def do_train(args: argparse.Namespace) -> None:
     save_model(model, args.save)
     print(f"Trained an {args.n}-gram model on '{args.data}' and saved to '{args.save}'.")
 
+
+ ## Convert --word string into tuple of (n-1) words
 def parse_start_words(arg_word: str, n: int) -> Tuple[str, ...]:
-    ## Convert --word string into tuple of (n-1) words
     required = n - 1
     parts = arg_word.strip().split()
     return tuple(parts)
 
+## Handle prediction activity.
 def do_predict(args: argparse.Namespace) -> None:
-    ## Handle prediction activity.
+    
     model = load_model(args.load)
     try:
         start_ctx = parse_start_words(args.word, model.n)
@@ -210,9 +212,8 @@ def do_predict(args: argparse.Namespace) -> None:
 
     print(" ".join(out_tokens))
 
-
-def build_arg_parser() -> argparse.ArgumentParser:
-    ## Build the command-line argument parser.
+## Build the command-line argument parser.
+def build_arg_parser() -> argparse.ArgumentParser: 
     p = argparse.ArgumentParser(
         description="Bigram/Trigram N-gram model trainer and predictor (standard library only)."
     )
@@ -226,8 +227,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--n", type=int, choices=[2, 3], default=2,)
     return p
 
+ ## Main entry point for command-line execution.
 def main(argv: Optional[List[str]] = None) -> None:
-    ## Main entry point for command-line execution.
     parser = build_arg_parser()
     args = parser.parse_args(argv)
 
