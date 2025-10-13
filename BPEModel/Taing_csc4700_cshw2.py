@@ -153,7 +153,6 @@ def load_model(path: str) -> BPEModel:
     with open(path, "rb") as f:
         return BPEModel.from_bytes(f.read())
 
-## start the training and save
 def do_train(args: argparse.Namespace) -> None:
     text = read_text_file(args.data)
     model = BPEModel()
@@ -161,7 +160,6 @@ def do_train(args: argparse.Namespace) -> None:
     save_model(model, args.save)
     print(f"Trained BPE with {len(model.vocabulary)} tokens and {len(model.merges)} merges. Saved to '{args.save}'.")
 
-## tokenize input text using trained BPE 
 def do_tokenize(args: argparse.Namespace) -> None:
     model = load_model(args.load)
     toks, ids = model.tokenize(args.text)
@@ -169,7 +167,6 @@ def do_tokenize(args: argparse.Namespace) -> None:
     print(ids)
 
 
-## Build the command-line argument parser.
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="BPE (no EOW) trainer and tokenizer")
     p.add_argument("activity", choices=["train_bpe", "tokenize"])
@@ -180,7 +177,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--k", type=int, default=500, help="Merge iterations (default 500)")
     return p
 
- ## Main entry point for command-line execution.
 def main(argv: Optional[List[str]] = None) -> None:
     args = build_arg_parser().parse_args(argv)
     if args.activity == "train_bpe":
