@@ -1,2 +1,7 @@
 # Ignore .env files
 .env
+
+# Ignore virtual environment folders
+venv/
+
+*.jsonl
